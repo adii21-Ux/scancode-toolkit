@@ -131,7 +131,8 @@ class RpmPackageData(models.PackageData):
         data = models.PackageData.to_dict(self, **kwargs)
         if _detailed:
             #################################################
-            data['installed_files'] = [istf.to_dict() for istf in (self.installed_files or [])]
+            data['installed_files'] = [istf.to_dict()
+                                       for istf in (self.installed_files or [])]
             #################################################
         else:
             #################################################
@@ -151,7 +152,8 @@ def get_installed_packages(root_dir, detect_licenses=False, **kwargs):
     # note that we also have file flags that can tell us which file is a license and doc.
 
     # dump the rpmdb to XMLish
-    xmlish_loc = rpm_installed.collPackageDataWithect_installed_rpmdb_xmlish_from_rootfs(root_dir)
+    xmlish_loc = rpm_installed.collPackageDataWithect_installed_rpmdb_xmlish_from_rootfs(
+        root_dir)
     return rpm_installed.parse_rpm_xmlish(xmlish_loc, detect_licenses=detect_licenses)
 
 
@@ -177,7 +179,8 @@ class RpmManifest(RpmPackageData, models.PackageDataFile):
         """
         rpm_tags = get_rpm_tags(location, include_desc=True)
 
-        if TRACE: logger_debug('build_from_tags: rpm_tags', rpm_tags)
+        if TRACE:
+            logger_debug('build_from_tags: rpm_tags', rpm_tags)
         if not rpm_tags:
             return
 
@@ -204,7 +207,8 @@ class RpmManifest(RpmPackageData, models.PackageDataFile):
 
         source_packages = []
         if rpm_tags.source_rpm:
-            sepoch, sname, sversion, srel, sarch = nevra.from_name(rpm_tags.source_rpm)
+            sepoch, sname, sversion, srel, sarch = nevra.from_name(
+                rpm_tags.source_rpm)
             src_evr = EVR(sversion, srel, sepoch).to_string()
             src_qualifiers = {}
             if sarch:
@@ -217,7 +221,8 @@ class RpmManifest(RpmPackageData, models.PackageDataFile):
                 qualifiers=src_qualifiers
             ).to_string()
 
-            if TRACE: logger_debug('build_from_tags: source_rpm', src_purl)
+            if TRACE:
+                logger_debug('build_from_tags: source_rpm', src_purl)
             source_packages = [src_purl]
 
         parties = []
@@ -231,7 +236,8 @@ class RpmManifest(RpmPackageData, models.PackageDataFile):
         # Red Hat
 
         if rpm_tags.distribution:
-            parties.append(models.Party(name=rpm_tags.distribution, role='distributor'))
+            parties.append(models.Party(
+                name=rpm_tags.distribution, role='distributor'))
 
         if rpm_tags.vendor:
             parties.append(models.Party(name=rpm_tags.vendor, role='vendor'))
@@ -283,6 +289,7 @@ class RpmPackage(RpmPackageData, models.Package):
 # FIXME: this license detection code is mostly copied from debian_copyright.py and alpine.py
 ############################################################################
 
+
 def detect_declared_license(declared):
     """
     Return a tuple of (declared license, detected license expression) from a
@@ -319,36 +326,4 @@ def detect_using_name_mapping(declared, licensing=Licensing()):
     """
     # TODO: use RPM symbology
     declared = declared.lower()
-    detected = get_declared_to_detected().get(declared)
-    if detected:
-        return str(licensing.parse(detected, simple=True))
-
-
-_DECLARED_TO_DETECTED = None
-
-
-def get_declared_to_detected(data_file=None):
-    """
-    Return a mapping of declared to detected license expression cached and
-    loaded from a tab-separated text file, all lowercase, normalized for spaces.
-
-    This data file is from license keys used in RPMs files and should be
-    derived from a large collection of RPMs files.
-    """
-    global _DECLARED_TO_DETECTED
-    if _DECLARED_TO_DETECTED is not None:
-        return _DECLARED_TO_DETECTED
-
-    _DECLARED_TO_DETECTED = {}
-    if not data_file:
-        data_file = os.path.join(os.path.dirname(__file__), 'rpm_licenses.txt')
-    with open(data_file) as df:
-        for line in df:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            decl, _, detect = line.partition('\t')
-            if detect and detect.strip():
-                decl = decl.strip()
-                _DECLARED_TO_DETECTED[decl] = detect
-    return _DECLARED_TO_DETECTED
+    str(licensing.parse(declared, simple=True))
